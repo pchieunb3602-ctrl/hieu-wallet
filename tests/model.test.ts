@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetLevel, convert, parseAmount, parseBackup, serializeBackup, emptyData, summarize, toCSV } from '../src/model.ts';
+import { budgetLevel, budgetStatus, convert, parseAmount, parseBackup, serializeBackup, emptyData, summarize, toCSV } from '../src/model.ts';
 
 test('parseAmount đọc kiểu Việt', () => {
   assert.equal(parseAmount('1.500.000'), 1500000);
@@ -26,6 +26,7 @@ test('summarize và budgetLevel', () => {
   assert.equal(budgetLevel(79, 100), 'ok');
   assert.equal(budgetLevel(80, 100), 'warn');
   assert.equal(budgetLevel(101, 100), 'over');
+  assert.equal(budgetStatus(d.transactions, '2026-11', 125).level, 'warn');
   assert.equal(parseBackup(serializeBackup(d)).transactions.length, 2);
   assert.throws(() => parseBackup('{}'));
   assert.ok(toCSV(d).startsWith('﻿Ngày'));

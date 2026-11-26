@@ -9,7 +9,6 @@ export interface Category {
   name: string;
   icon: string; // emoji
   color: string; // màu nhấn của danh mục
-  budget?: number; // hạn mức hằng tháng, tính bằng tệ (chỉ dùng cho danh mục chi)
 }
 
 export interface Transaction {
@@ -32,6 +31,7 @@ export interface Settings {
   name: string;
   background: string; // id hình nền có sẵn, hoặc 'custom' = ảnh người dùng chọn
   bgDim: number; // độ phủ màu lên ảnh nền, 0..0.8
+  monthlyBudget: number; // ngân sách chung mỗi tháng, tính bằng tệ (0 = chưa đặt)
 }
 
 export interface AppData {
@@ -44,15 +44,15 @@ export interface AppData {
 export const BUDGET_WARN = 0.8;
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'food', type: 'expense', name: 'Ăn uống', icon: '🍜', color: '#F59E0B', budget: 1500 },
-  { id: 'grocery', type: 'expense', name: 'Đi chợ / siêu thị', icon: '🛒', color: '#10B981', budget: 800 },
-  { id: 'transport', type: 'expense', name: 'Đi lại', icon: '🚇', color: '#38BDF8', budget: 300 },
-  { id: 'housing', type: 'expense', name: 'Nhà ở', icon: '🏠', color: '#6366F1', budget: 2500 },
-  { id: 'phone', type: 'expense', name: 'Điện thoại / internet', icon: '📱', color: '#8B5CF6', budget: 150 },
-  { id: 'shopping', type: 'expense', name: 'Mua sắm', icon: '🛍️', color: '#EC4899', budget: 600 },
-  { id: 'health', type: 'expense', name: 'Sức khoẻ', icon: '💊', color: '#EF4444', budget: 300 },
-  { id: 'fun', type: 'expense', name: 'Giải trí', icon: '🎉', color: '#A855F7', budget: 400 },
-  { id: 'other', type: 'expense', name: 'Khác', icon: '📦', color: '#94A3B8', budget: 300 },
+  { id: 'food', type: 'expense', name: 'Ăn uống', icon: '🍜', color: '#F59E0B' },
+  { id: 'grocery', type: 'expense', name: 'Đi chợ / siêu thị', icon: '🛒', color: '#10B981' },
+  { id: 'transport', type: 'expense', name: 'Đi lại', icon: '🚇', color: '#38BDF8' },
+  { id: 'housing', type: 'expense', name: 'Nhà ở', icon: '🏠', color: '#6366F1' },
+  { id: 'phone', type: 'expense', name: 'Điện thoại / internet', icon: '📱', color: '#8B5CF6' },
+  { id: 'shopping', type: 'expense', name: 'Mua sắm', icon: '🛍️', color: '#EC4899' },
+  { id: 'health', type: 'expense', name: 'Sức khoẻ', icon: '💊', color: '#EF4444' },
+  { id: 'fun', type: 'expense', name: 'Giải trí', icon: '🎉', color: '#A855F7' },
+  { id: 'other', type: 'expense', name: 'Khác', icon: '📦', color: '#94A3B8' },
   { id: 'salary', type: 'income', name: 'Lương', icon: '💼', color: '#4F46E5' },
   { id: 'fx', type: 'income', name: 'Lãi đổi tệ', icon: '💱', color: '#06B6D4' },
   { id: 'stock', type: 'income', name: 'Lãi chứng khoán', icon: '📈', color: '#22C55E' },
@@ -67,6 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   name: 'Hiếu',
   background: 'default',
   bgDim: 0.35,
+  monthlyBudget: 6000,
 };
 
 export function emptyData(): AppData {
@@ -215,14 +216,6 @@ export function dailyExpense(txs: Transaction[], key: string, cur: Currency): nu
 
 export type BudgetLevel = 'ok' | 'warn' | 'over' | 'none';
 
-export interface BudgetRow {
-  category: Category;
-  spent: number; // tệ
-  budget: number; // tệ
-  ratio: number;
-  level: BudgetLevel;
-}
-
 export function budgetLevel(spent: number, budget: number): BudgetLevel {
   if (!budget || budget <= 0) return 'none';
   const r = spent / budget;
@@ -231,18 +224,10 @@ export function budgetLevel(spent: number, budget: number): BudgetLevel {
   return 'ok';
 }
 
-/** Ngân sách luôn tính bằng tệ vì chi tiêu ghi bằng tệ. */
-export function budgetRows(txs: Transaction[], cats: Category[], key: string): BudgetRow[] {
-  return totalsByCategory(txs, cats, key, 'expense', 'CNY').map(({ category, total }) => {
-    const budget = category.budget ?? 0;
-    return { category, spent: total, budget, ratio: budget > 0 ? total / budget : 0, level: budgetLevel(total, budget) };
-  });
-}
-
-export function budgetTotals(rows: BudgetRow[]): { spent: number; budget: number; ratio: number } {
-  const budget = rows.reduce((s, r) => s + r.budget, 0);
-  const spent = rows.filter((r) => r.budget > 0).reduce((s, r) => s + r.spent, 0);
-  return { spent, budget, ratio: budget > 0 ? spent / budget : 0 };
+/** Ngân sách chung của tháng; tính bằng tệ vì chi tiêu ghi bằng tệ. */
+export function budgetStatus(txs: Transaction[], key: string, budget: number) {
+  const spent = txInMonth(txs, key).filter((t) => t.type === 'expense').reduce((s, t) => s + convert(t, 'CNY'), 0);
+  return { spent, budget, ratio: budget > 0 ? spent / budget : 0, level: budgetLevel(spent, budget) };
 }
 
 /** Danh mục sắp theo số lần dùng gần đây, để danh mục hay dùng nằm đầu. */

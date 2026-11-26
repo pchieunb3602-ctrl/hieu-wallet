@@ -1,10 +1,10 @@
 import { ArrowDownRight, ArrowUpRight, PiggyBank, Target, TrendingUp, PieChart, Clock, CloudUpload } from 'lucide-react';
 import { useStore } from '../store';
 import {
-  budgetRows, budgetTotals, dailyExpense, formatMoney, monthKey, needsBackupReminder, shiftMonth, sortTx, summarize,
+  budgetStatus, dailyExpense, formatMoney, monthKey, needsBackupReminder, shiftMonth, sortTx, summarize,
   todayISO, totalsByCategory, txInMonth, type Transaction,
 } from '../model';
-import { AreaChart, Card, CardTitle, CurrencyToggle, Donut, Empty, MonthPicker } from '../ui';
+import { AreaChart, Card, CardTitle, CurrencyToggle, Donut, Empty, MonthPicker, Progress } from '../ui';
 import { TxRow } from '../TxForm';
 
 function pctChange(now: number, prev: number): number | null {
@@ -19,8 +19,7 @@ export function Overview({ month, setMonth, onEdit, goTab }: {
   const cur = data.settings.displayCurrency;
   const s = summarize(data.transactions, month, cur);
   const prev = summarize(data.transactions, shiftMonth(month, -1), cur);
-  const rows = budgetRows(data.transactions, data.categories, month);
-  const bt = budgetTotals(rows);
+  const bt = budgetStatus(data.transactions, month, data.settings.monthlyBudget);
   const cats = totalsByCategory(data.transactions, data.categories, month, 'expense', cur).filter((c) => c.total > 0);
   const daily = dailyExpense(data.transactions, month, cur);
   let run = 0;
@@ -56,6 +55,15 @@ export function Overview({ month, setMonth, onEdit, goTab }: {
         </Card>
       )}
 
+      {(bt.level === 'warn' || bt.level === 'over') && (
+        <Card className="alert-card">
+          <Target size={20} />
+          <p>{bt.level === 'over'
+            ? <>Đã <b>vượt ngân sách</b> tháng {formatMoney(bt.spent - bt.budget, 'CNY')}.</>
+            : <>Đã dùng <b>{Math.round(bt.ratio * 100)}%</b> ngân sách tháng, còn {formatMoney(bt.budget - bt.spent, 'CNY')}.</>}</p>
+        </Card>
+      )}
+
       <div className="stats">
         {stats.map((st) => {
           const ch = pctChange(st.value, st.prev);
@@ -73,11 +81,12 @@ export function Overview({ month, setMonth, onEdit, goTab }: {
             </Card>
           );
         })}
-        <Card className="stat stat-wide" onClick={() => goTab('budget')}>
+        <Card className="stat stat-wide" onClick={() => goTab('settings')}>
           <span className="stat-icon tone-violet"><Target size={20} /></span>
           <span className="stat-label">Ngân sách đã dùng</span>
           <b className={'stat-value' + (bt.ratio > 1 ? ' neg' : '')}>{bt.budget > 0 ? Math.round(bt.ratio * 100) + '%' : '—'}</b>
-          <span className="stat-change muted">{formatMoney(bt.spent, 'CNY')} / {formatMoney(bt.budget, 'CNY')}</span>
+          <span className="stat-change muted">{bt.budget > 0 ? `${formatMoney(bt.spent, 'CNY')} / ${formatMoney(bt.budget, 'CNY')}` : 'Chưa đặt, bấm để đặt'}</span>
+          {bt.budget > 0 && <Progress ratio={bt.ratio} level={bt.level} />}
         </Card>
       </div>
 

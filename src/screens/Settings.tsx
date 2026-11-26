@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Download, FileSpreadsheet, Fingerprint, Plus, RefreshCw, Upload, User, Wallet, Trash2, Image as ImageIcon } from 'lucide-react';
+import { ChevronRight, Download, FileSpreadsheet, Fingerprint, Plus, RefreshCw, Upload, User, Wallet, Trash2, Image as ImageIcon, Target } from 'lucide-react';
 import { useStore } from '../store';
 import { emptyData, formatMoney, parseAmount, parseBackup, serializeBackup, toCSV, todayISO, uid, type Category, type TxType } from '../model';
 import { biometricAvailable, isNative, shareFile, shrinkImage } from '../platform';
@@ -13,6 +13,7 @@ export function SettingsScreen() {
   const s = data.settings;
   const [rate, setRate] = useState(String(s.rate));
   const [name, setName] = useState(s.name);
+  const [budget, setBudget] = useState(s.monthlyBudget ? String(s.monthlyBudget) : '');
   const [bioOK, setBioOK] = useState<boolean | null>(null);
   const [catType, setCatType] = useState<TxType>('expense');
   const [editing, setEditing] = useState<Category | null>(null);
@@ -45,6 +46,7 @@ export function SettingsScreen() {
       if (!window.confirm(`Khôi phục ${d.transactions.length} khoản từ file này? Dữ liệu hiện tại trên máy sẽ bị thay thế.`)) return;
       replaceAll({ ...d, settings: { ...d.settings, lastBackupAt: Date.now() } });
       setRate(String(d.settings.rate));
+      setBudget(d.settings.monthlyBudget ? String(d.settings.monthlyBudget) : '');
       setName(d.settings.name);
       toast('Đã khôi phục dữ liệu');
     } catch (e) {
@@ -75,6 +77,22 @@ export function SettingsScreen() {
           <span>₫</span>
         </label>
         <p className="footnote">Tỷ giá này điền sẵn khi bạn ghi khoản mới. Các khoản đã ghi giữ nguyên tỷ giá lúc ghi. Ví dụ ¥100 ≈ {formatMoney(100 * s.rate, 'VND')}.</p>
+      </Card>
+
+      <Card>
+        <CardTitle icon={<Target size={18} />}>Ngân sách tháng</CardTitle>
+        <label className="field inline">
+          <span>¥</span>
+          <input inputMode="decimal" value={budget} placeholder="Chưa đặt" onChange={(e) => setBudget(e.target.value)}
+            onBlur={() => {
+              const n = budget.trim() ? parseAmount(budget) : 0;
+              if (Number.isNaN(n) || n < 0) { setBudget(s.monthlyBudget ? String(s.monthlyBudget) : ''); return toast('Số tiền không hợp lệ'); }
+              updateSettings({ monthlyBudget: n });
+              toast(n ? 'Đã lưu ngân sách tháng' : 'Đã bỏ ngân sách tháng');
+            }} />
+          <span>/ tháng</span>
+        </label>
+        <p className="footnote">Tổng chi mỗi tháng (tính bằng tệ). App cảnh báo khi dùng đến 80% và báo đỏ khi vượt. Để trống nếu không muốn đặt.</p>
       </Card>
 
       <Card>
@@ -134,7 +152,6 @@ export function SettingsScreen() {
             <button key={c.id} className="settings-row" onClick={() => setEditing(c)}>
               <span className="tx-icon" style={{ ['--c' as string]: c.color }}>{c.icon}</span>
               <span className="grow">{c.name}</span>
-              {c.type === 'expense' && <small className="muted">{c.budget ? formatMoney(c.budget, 'CNY') + '/tháng' : ''}</small>}
               <ChevronRight size={16} className="muted" />
             </button>
           ))}
@@ -194,8 +211,7 @@ export function SettingsScreen() {
 function CategoryEditor({ cat, onClose }: { cat: Category | null; onClose: () => void }) {
   const { data, upsertCategory, deleteCategory, toast } = useStore();
   const [draft, setDraft] = useState<Category | null>(cat);
-  const [budget, setBudget] = useState('');
-  useEffect(() => { setDraft(cat); setBudget(cat?.budget ? String(cat.budget) : ''); }, [cat]);
+  useEffect(() => { setDraft(cat); }, [cat]);
   if (!draft) return null;
   const isNew = !draft.id;
   const used = data.transactions.filter((t) => t.categoryId === draft.id).length;
@@ -218,12 +234,6 @@ function CategoryEditor({ cat, onClose }: { cat: Category | null; onClose: () =>
           <button key={c} aria-label={c} className={draft.color === c ? 'on' : ''} style={{ background: c }} onClick={() => setDraft({ ...draft, color: c })} />
         ))}
       </div>
-      {draft.type === 'expense' && (
-        <label className="field">
-          <span>Ngân sách mỗi tháng (tệ, không bắt buộc)</span>
-          <input inputMode="decimal" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Ví dụ: 500" />
-        </label>
-      )}
       <div className="form-actions">
         {!isNew && (
           <button className="btn btn-danger-ghost" onClick={() => {
@@ -233,9 +243,7 @@ function CategoryEditor({ cat, onClose }: { cat: Category | null; onClose: () =>
         )}
         <button className="btn btn-primary grow" onClick={() => {
           if (!draft.name.trim()) return toast('Nhập tên danh mục');
-          const b = budget.trim() ? parseAmount(budget) : 0;
-          if (Number.isNaN(b) || b < 0) return toast('Ngân sách không hợp lệ');
-          upsertCategory({ ...draft, id: draft.id || uid(), name: draft.name.trim(), icon: draft.icon.trim() || '⭐', budget: draft.type === 'expense' && b > 0 ? b : undefined });
+          upsertCategory({ ...draft, id: draft.id || uid(), name: draft.name.trim(), icon: draft.icon.trim() || '⭐' });
           toast(isNew ? 'Đã thêm danh mục' : 'Đã lưu danh mục');
           onClose();
         }}>Lưu</button>

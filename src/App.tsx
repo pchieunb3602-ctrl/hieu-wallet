@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LayoutDashboard, Receipt, Wallet, Target, Settings as Cog, Plus, Fingerprint } from 'lucide-react';
+import { LayoutDashboard, Receipt, Wallet, Settings as Cog, Plus, Fingerprint } from 'lucide-react';
 import { App as CapApp } from '@capacitor/app';
 import { StoreProvider, useStore } from './store';
 import { monthKey, todayISO, type Transaction } from './model';
@@ -8,16 +8,14 @@ import { Backdrop, Sheet } from './ui';
 import { TxForm } from './TxForm';
 import { Overview } from './screens/Overview';
 import { TxScreen } from './screens/TxScreen';
-import { Budget } from './screens/Budget';
 import { SettingsScreen } from './screens/Settings';
 
-type Tab = 'home' | 'expense' | 'income' | 'budget' | 'settings';
+type Tab = 'home' | 'expense' | 'income' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: typeof Receipt }[] = [
   { id: 'home', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'expense', label: 'Chi tiêu', icon: Receipt },
   { id: 'income', label: 'Thu nhập', icon: Wallet },
-  { id: 'budget', label: 'Ngân sách', icon: Target },
   { id: 'settings', label: 'Cài đặt', icon: Cog },
 ];
 
@@ -89,14 +87,12 @@ function Shell() {
         {tab === 'home' && <Overview month={month} setMonth={setMonth} onEdit={setEditing} goTab={goTab} />}
         {tab === 'expense' && <TxScreen key="e" type="expense" month={month} setMonth={setMonth} onEdit={setEditing} />}
         {tab === 'income' && <TxScreen key="i" type="income" month={month} setMonth={setMonth} onEdit={setEditing} />}
-        {tab === 'budget' && <Budget month={month} setMonth={setMonth} />}
         {tab === 'settings' && <SettingsScreen />}
       </main>
 
       <nav className="tabbar" aria-label="Điều hướng">
         {TABS.slice(0, 2).map((t) => <TabBtn key={t.id} t={t} on={tab === t.id} onClick={() => setTab(t.id)} />)}
         <button className="fab" aria-label="Ghi khoản mới" onClick={() => setAdding(true)}><Plus size={28} strokeWidth={2.5} /></button>
-        {TABS.slice(2, 3).map((t) => <TabBtn key={t.id} t={t} on={tab === t.id} onClick={() => setTab(t.id)} />)}
         {TABS.slice(3).map((t) => <TabBtn key={t.id} t={t} on={tab === t.id} onClick={() => setTab(t.id)} />)}
       </nav>
 
