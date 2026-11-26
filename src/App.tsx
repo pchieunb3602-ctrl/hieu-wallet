@@ -93,7 +93,7 @@ function Shell() {
       <nav className="tabbar" aria-label="Điều hướng">
         {TABS.slice(0, 2).map((t) => <TabBtn key={t.id} t={t} on={tab === t.id} onClick={() => setTab(t.id)} />)}
         <button className="fab" aria-label="Ghi khoản mới" onClick={() => setAdding(true)}><Plus size={28} strokeWidth={2.5} /></button>
-        {TABS.slice(3).map((t) => <TabBtn key={t.id} t={t} on={tab === t.id} onClick={() => setTab(t.id)} />)}
+        {TABS.slice(2).map((t) => <TabBtn key={t.id} t={t} on={tab === t.id} onClick={() => setTab(t.id)} />)}
       </nav>
 
       <Sheet open={adding} onClose={() => setAdding(false)} title="Ghi khoản mới">
