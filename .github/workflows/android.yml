@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,3 +29,9 @@ jobs:
         with:
           name: hieu-wallet-unsigned
           path: android/app/build/outputs/apk/release/*.apk
+      - name: Lưu APK vào nhánh apk-builds
+        run: |
+          mkdir /tmp/out && cp android/app/build/outputs/apk/release/app-release-unsigned.apk /tmp/out/
+          cd /tmp/out && git init -q -b apk-builds && git add . \
+            && git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "APK ${GITHUB_SHA::7}" \
+            && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" apk-builds

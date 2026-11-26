@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { emptyData, uid, type AppData, type Category, type Settings, type Transaction } from './model';
-import { loadData, saveData, isNative } from './platform';
+import { DEFAULT_SETTINGS, emptyData, uid, type AppData, type Category, type Settings, type Transaction } from './model';
+import { loadData, saveData, isNative, loadBg, saveBg } from './platform';
 import { demoData } from './demo';
 
 interface Store {
@@ -14,6 +14,8 @@ interface Store {
   replaceAll: (d: AppData) => void;
   toast: (msg: string) => void;
   toastMsg: string | null;
+  bgImage: string | null;
+  setBgImage: (url: string | null) => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -27,10 +29,12 @@ export function useStore(): Store {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [bgImage, setBg] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    loadData().then((d) => setData(d ?? (isNative ? emptyData() : demoData())));
+    loadData().then((d) => setData(d ? { ...d, settings: { ...DEFAULT_SETTINGS, ...d.settings } } : isNative ? emptyData() : demoData()));
+    loadBg().then(setBg);
   }, []);
 
   useEffect(() => {
@@ -51,6 +55,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     data,
     toastMsg,
     toast,
+    bgImage,
+    setBgImage: (url) => { setBg(url); saveBg(url); },
     addTx: (t) => update((d) => ({ ...d, transactions: [...d.transactions, { ...t, id: uid(), createdAt: Date.now() }] })),
     updateTx: (t) => update((d) => ({ ...d, transactions: d.transactions.map((x) => (x.id === t.id ? t : x)) })),
     deleteTx: (id) => update((d) => ({ ...d, transactions: d.transactions.filter((x) => x.id !== id) })),

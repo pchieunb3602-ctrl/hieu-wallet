@@ -4,7 +4,7 @@ import { App as CapApp } from '@capacitor/app';
 import { StoreProvider, useStore } from './store';
 import { monthKey, todayISO, type Transaction } from './model';
 import { isNative, unlock } from './platform';
-import { Sheet } from './ui';
+import { Backdrop, Sheet } from './ui';
 import { TxForm } from './TxForm';
 import { Overview } from './screens/Overview';
 import { TxScreen } from './screens/TxScreen';
@@ -24,7 +24,7 @@ const TABS: { id: Tab; label: string; icon: typeof Receipt }[] = [
 const RELOCK_AFTER_MS = 60_000;
 
 function Shell() {
-  const { data, toastMsg } = useStore();
+  const { data, toastMsg, bgImage } = useStore();
   const [tab, setTab] = useState<Tab>('home');
   const [month, setMonth] = useState(monthKey(todayISO()));
   const [adding, setAdding] = useState(false);
@@ -84,6 +84,7 @@ function Shell() {
 
   return (
     <div className="app">
+      <Backdrop id={data.settings.background} image={bgImage} dim={data.settings.bgDim} />
       <main>
         {tab === 'home' && <Overview month={month} setMonth={setMonth} onEdit={setEditing} goTab={goTab} />}
         {tab === 'expense' && <TxScreen key="e" type="expense" month={month} setMonth={setMonth} onEdit={setEditing} />}

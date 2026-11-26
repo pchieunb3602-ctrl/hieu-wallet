@@ -30,6 +30,8 @@ export interface Settings {
   lockEnabled: boolean;
   lastBackupAt: number | null;
   name: string;
+  background: string; // id hình nền có sẵn, hoặc 'custom' = ảnh người dùng chọn
+  bgDim: number; // độ phủ màu lên ảnh nền, 0..0.8
 }
 
 export interface AppData {
@@ -63,6 +65,8 @@ export const DEFAULT_SETTINGS: Settings = {
   lockEnabled: true,
   lastBackupAt: null,
   name: 'Hiếu',
+  background: 'default',
+  bgDim: 0.35,
 };
 
 export function emptyData(): AppData {

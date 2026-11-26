@@ -188,3 +188,25 @@ export function Donut({ parts, center, sub }: { parts: { value: number; color: s
     </div>
   );
 }
+
+export const BG_PRESETS: { id: string; name: string; css: string }[] = [
+  { id: 'default', name: 'Mặc định', css: '' },
+  { id: 'sunset', name: 'Hoàng hôn', css: 'linear-gradient(160deg, #ffd6e0 0%, #ffe3c7 45%, #e9d5ff 100%)' },
+  { id: 'ocean', name: 'Biển', css: 'linear-gradient(160deg, #cdeffd 0%, #d6e4ff 50%, #c7f5ec 100%)' },
+  { id: 'mint', name: 'Bạc hà', css: 'linear-gradient(160deg, #d9fbe8 0%, #e6f7ff 55%, #eef0ff 100%)' },
+  { id: 'peach', name: 'Đào', css: 'linear-gradient(160deg, #ffe4d6 0%, #fff1e0 50%, #ffd9ec 100%)' },
+];
+
+/** Lớp nền cố định phía sau app: gradient có sẵn hoặc ảnh người dùng chọn. */
+export function Backdrop({ id, image, dim }: { id: string; image: string | null; dim: number }) {
+  if (id === 'custom' && image) {
+    return (
+      <div className="backdrop" aria-hidden="true" style={{ backgroundImage: `url(${image})` }}>
+        <div className="backdrop-dim" style={{ opacity: dim }} />
+      </div>
+    );
+  }
+  const p = BG_PRESETS.find((b) => b.id === id);
+  if (!p || !p.css) return null;
+  return <div className="backdrop" aria-hidden="true" style={{ backgroundImage: p.css }} />;
+}

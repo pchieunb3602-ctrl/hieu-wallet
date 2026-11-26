@@ -250,3 +250,15 @@ h2, h3 { margin: 0; }
 .lock, .splash { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; }
 .lock-logo, .splash-logo { width: 84px; height: 84px; border-radius: 26px; display: grid; place-items: center; font-size: 28px; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--primary), var(--primary-2)); box-shadow: 0 14px 30px rgba(91,108,240,.4); }
 .lock p { margin: 0 0 16px; }
+
+.backdrop { position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; }
+.backdrop-dim { position: absolute; inset: 0; background: var(--bg-solid); }
+.bg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.bg-tile { aspect-ratio: 3 / 4; border-radius: 16px; border: 3px solid transparent; background-size: cover; background-position: center; display: flex; align-items: flex-end; justify-content: center; padding: 6px; font-size: 12px; font-weight: 700; color: #1e1b4b; overflow: hidden; }
+.bg-tile span { background: rgba(255,255,255,.8); border-radius: 8px; padding: 2px 6px; }
+.bg-tile.on { border-color: var(--primary); }
+.bg-tile.pick { background: var(--track); color: var(--primary); flex-direction: column; justify-content: center; gap: 4px; }
+.range { width: 100%; accent-color: var(--primary); }
+.bg-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.bg-tile { aspect-ratio: 3 / 4.2; font-size: 11px; }
+.field.inline span { white-space: nowrap; }

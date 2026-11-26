@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Download, FileSpreadsheet, Fingerprint, Plus, RefreshCw, Upload, User, Wallet, Trash2 } from 'lucide-react';
+import { ChevronRight, Download, FileSpreadsheet, Fingerprint, Plus, RefreshCw, Upload, User, Wallet, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useStore } from '../store';
 import { emptyData, formatMoney, parseAmount, parseBackup, serializeBackup, toCSV, todayISO, uid, type Category, type TxType } from '../model';
-import { biometricAvailable, isNative, shareFile } from '../platform';
-import { Card, CardTitle, Sheet } from '../ui';
+import { biometricAvailable, isNative, shareFile, shrinkImage } from '../platform';
+import { BG_PRESETS, Card, CardTitle, Sheet } from '../ui';
 
 const COLORS = ['#6366F1', '#8B5CF6', '#A855F7', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#22C55E', '#06B6D4', '#38BDF8', '#4F46E5', '#94A3B8'];
 
 export function SettingsScreen() {
-  const { data, updateSettings, replaceAll, toast } = useStore();
+  const { data, updateSettings, replaceAll, toast, bgImage, setBgImage } = useStore();
+  const bgRef = useRef<HTMLInputElement>(null);
   const s = data.settings;
   const [rate, setRate] = useState(String(s.rate));
   const [name, setName] = useState(s.name);
@@ -74,6 +75,52 @@ export function SettingsScreen() {
           <span>₫</span>
         </label>
         <p className="footnote">Tỷ giá này điền sẵn khi bạn ghi khoản mới. Các khoản đã ghi giữ nguyên tỷ giá lúc ghi. Ví dụ ¥100 ≈ {formatMoney(100 * s.rate, 'VND')}.</p>
+      </Card>
+
+      <Card>
+        <CardTitle icon={<ImageIcon size={18} />}>Hình nền</CardTitle>
+        <div className="bg-grid">
+          {BG_PRESETS.map((b) => (
+            <button key={b.id} className={'bg-tile' + (s.background === b.id ? ' on' : '')}
+              style={{ backgroundImage: b.css || 'var(--bg)' }} onClick={() => updateSettings({ background: b.id })}>
+              <span>{b.name}</span>
+            </button>
+          ))}
+          {bgImage && (
+            <button className={'bg-tile' + (s.background === 'custom' ? ' on' : '')} style={{ backgroundImage: `url(${bgImage})` }}
+              onClick={() => updateSettings({ background: 'custom' })}>
+              <span>Ảnh của bạn</span>
+            </button>
+          )}
+          <button className="bg-tile pick" onClick={() => bgRef.current?.click()}>
+            <ImageIcon size={22} />
+            {bgImage ? 'Đổi ảnh' : 'Chọn ảnh'}
+          </button>
+        </div>
+        <input ref={bgRef} type="file" accept="image/*" hidden onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (!f) return;
+          try {
+            setBgImage(await shrinkImage(f));
+            updateSettings({ background: 'custom' });
+            toast('Đã đặt ảnh nền');
+          } catch (err) {
+            toast((err as Error).message);
+          }
+        }} />
+        {s.background === 'custom' && bgImage && (
+          <>
+            <label className="field" style={{ marginTop: 12 }}>
+              <span>Làm mờ ảnh cho dễ đọc chữ: {Math.round(s.bgDim * 100)}%</span>
+              <input className="range" type="range" min="0" max="0.8" step="0.05" value={s.bgDim}
+                onChange={(e) => updateSettings({ bgDim: Number(e.target.value) })} />
+            </label>
+            <button className="btn btn-danger-ghost full" onClick={() => { setBgImage(null); updateSettings({ background: 'default' }); toast('Đã bỏ ảnh nền'); }}>
+              <Trash2 size={18} /> Bỏ ảnh nền
+            </button>
+          </>
+        )}
       </Card>
 
       <Card>
