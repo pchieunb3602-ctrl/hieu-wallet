@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetLevel, budgetStatus, convert, parseAmount, parseBackup, serializeBackup, emptyData, summarize, toCSV } from '../src/model.ts';
+import { formatAmountInput, budgetLevel, budgetStatus, convert, parseAmount, parseBackup, serializeBackup, emptyData, summarize, toCSV } from '../src/model.ts';
 
 test('parseAmount đọc kiểu Việt', () => {
   assert.equal(parseAmount('1.500.000'), 1500000);
@@ -30,4 +30,14 @@ test('summarize và budgetLevel', () => {
   assert.equal(parseBackup(serializeBackup(d)).transactions.length, 2);
   assert.throws(() => parseBackup('{}'));
   assert.ok(toCSV(d).startsWith('﻿Ngày'));
+});
+
+test('formatAmountInput thêm dấu chấm khi gõ', () => {
+  assert.equal(formatAmountInput('32000000', 'VND'), '32.000.000');
+  assert.equal(formatAmountInput('3.200.0000', 'VND'), '32.000.000');
+  assert.equal(formatAmountInput('1234', 'CNY'), '1.234');
+  assert.equal(formatAmountInput('12,5', 'CNY'), '12,5');
+  assert.equal(formatAmountInput('12.5', 'CNY'), '12,5');
+  assert.equal(formatAmountInput('1.2345', 'CNY'), '12.345');
+  assert.equal(parseAmount(formatAmountInput('1234,5', 'CNY')), 1234.5);
 });

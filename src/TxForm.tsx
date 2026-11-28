@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useStore } from './store';
-import { categoriesByUsage, convert, formatMoney, parseAmount, todayISO, type Transaction, type TxType } from './model';
+import { amountToInput, categoriesByUsage, convert, formatAmountInput, formatMoney, parseAmount, todayISO, type Transaction, type TxType } from './model';
 
 export function TxForm({ initial, defaultType = 'expense', onDone }: { initial?: Transaction; defaultType?: TxType; onDone: () => void }) {
   const { data, addTx, updateTx, deleteTx, toast } = useStore();
   const [type, setType] = useState<TxType>(initial?.type ?? defaultType);
-  const [amount, setAmount] = useState(initial ? String(initial.amount).replace('.', ',') : '');
+  const [amount, setAmount] = useState(initial ? amountToInput(initial.amount, initial.currency) : '');
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? '');
   const [note, setNote] = useState(initial?.note ?? '');
   const [date, setDate] = useState(initial?.date ?? todayISO());
@@ -36,8 +36,8 @@ export function TxForm({ initial, defaultType = 'expense', onDone }: { initial?:
     <div className="tx-form">
       {!initial && (
         <div className="seg seg-wide">
-          <button className={type === 'expense' ? 'on expense' : ''} onClick={() => { setType('expense'); setCategoryId(''); }}>Khoản chi</button>
-          <button className={type === 'income' ? 'on income' : ''} onClick={() => { setType('income'); setCategoryId(''); }}>Khoản thu</button>
+          <button className={type === 'expense' ? 'on expense' : ''} onClick={() => { setType('expense'); setCategoryId(''); setAmount(''); }}>Khoản chi</button>
+          <button className={type === 'income' ? 'on income' : ''} onClick={() => { setType('income'); setCategoryId(''); setAmount(''); }}>Khoản thu</button>
         </div>
       )}
 
@@ -45,15 +45,18 @@ export function TxForm({ initial, defaultType = 'expense', onDone }: { initial?:
         <span className="amount-cur">{currency === 'CNY' ? '¥' : '₫'}</span>
         <input
           autoFocus={!initial}
-          inputMode="decimal"
+          inputMode={currency === 'VND' ? 'numeric' : 'decimal'}
           placeholder="0"
           value={amount}
-          onChange={(e) => { setAmount(e.target.value); setError(''); }}
+          onChange={(e) => { setAmount(formatAmountInput(e.target.value, currency)); setError(''); }}
           aria-label={currency === 'CNY' ? 'Số tiền (tệ)' : 'Số tiền (VNĐ)'}
         />
+        {currency === 'VND' && (
+          <button type="button" className="zeros-btn" onClick={() => setAmount((a) => formatAmountInput((a || '0') + '000', 'VND'))}>000</button>
+        )}
       </label>
       <div className="amount-hint">
-        {preview > 0 ? <>≈ {formatMoney(preview, currency === 'CNY' ? 'VND' : 'CNY')}</> : type === 'expense' ? 'Nhập số tệ, ví dụ 35 hoặc 12,5' : 'Nhập số VNĐ, ví dụ 32.000.000 hoặc 850k'}
+        {preview > 0 ? <>≈ {formatMoney(preview, currency === 'CNY' ? 'VND' : 'CNY')}</> : type === 'expense' ? 'Nhập số tệ, ví dụ 35 hoặc 12,5' : 'Nhập số VNĐ, dấu chấm tự thêm. Bấm 000 để thêm ba số 0'}
       </div>
 
       <div className="field-label">Danh mục</div>

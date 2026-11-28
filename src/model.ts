@@ -155,11 +155,37 @@ export function parseAmount(input: string): number {
   let mult = 1;
   if (s.endsWith('k')) { mult = 1000; s = s.slice(0, -1); }
   else if (s.endsWith('tr')) { mult = 1_000_000; s = s.slice(0, -2); }
-  if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 1.500.000 kiểu Việt
+  if (/^\d{1,3}(\.\d{3})+,\d+$/.test(s)) s = s.replace(/\./g, '').replace(',', '.'); // 1.234,5
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 1.500.000 kiểu Việt
   else if (/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, ''); // 1,500,000
   else s = s.replace(',', '.'); // 25,5 -> 25.5
   if (!/^\d+(\.\d+)?$/.test(s)) return NaN;
   return Number(s) * mult;
+}
+
+/** Định dạng số khi đang gõ: tự thêm dấu chấm hàng nghìn (32.000.000); tệ dùng dấu phẩy cho số lẻ (12,5). */
+export function formatAmountInput(raw: string, currency: Currency): string {
+  if (currency === 'VND') {
+    const digits = raw.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+  const cleaned = raw.replace(/[^\d,.]/g, '');
+  // dấu chấm/phẩy gõ cuối cùng là dấu thập phân
+  const lastSep = Math.max(cleaned.lastIndexOf(','), cleaned.lastIndexOf('.'));
+  let int = cleaned;
+  let dec: string | null = null;
+  if (lastSep >= 0 && cleaned.length - lastSep - 1 <= 2 && !/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+    int = cleaned.slice(0, lastSep);
+    dec = cleaned.slice(lastSep + 1);
+  }
+  int = int.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return dec === null ? grouped : (grouped || '0') + ',' + dec.replace(/\D/g, '').slice(0, 2);
+}
+
+/** Số đã lưu -> chuỗi để sửa trong ô nhập. */
+export function amountToInput(n: number, currency: Currency): string {
+  return formatAmountInput(currency === 'VND' ? String(Math.round(n)) : String(n).replace('.', ','), currency);
 }
 
 // ---------- Tổng hợp ----------
